@@ -1,0 +1,43 @@
+version: '2.0'
+services:
+  db:
+    image: mariadb:10.1
+    container_name: seafile-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=db_dev  # mysql root的密码，同时修改 seafile的DB_ROOT_PASSWD与这个一致
+      - MYSQL_LOG_CONSOLE=true
+    volumes:
+      - ./seafile-mysql/db:/var/lib/mysql  # mysql 数据持久化挂载路径。修改冒号前面的。
+    networks:
+      - seafile-net
+
+  memcached:
+    image: memcached:1.5.6
+    container_name: seafile-memcached
+    entrypoint: memcached -m 256
+    networks:
+      - seafile-net
+  seafile:
+    image: seafileltd/seafile-mc:latest
+    container_name: seafile
+    ports:
+      - "80:80"
+    volumes:
+      - ./seafile-data:/shared   # seafile 文件持久化路径。修改冒号前面的
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWD=db_dev  # 必须与上面的mysql 密码一致
+      - SEAFILE_ADMIN_EMAIL=admin@admin.com # seafile  admin的邮箱账户
+      - SEAFILE_ADMIN_PASSWORD=admin123456     # seafile admin的用户名密码
+    depends_on:
+      - db
+      - memcached
+    networks:
+      - seafile-net
+  onlyoffice:
+    image: onlyoffice/documentserver
+    container_name: onlyoffice
+    ports:
+      - "8080:80"
+networks:
+  seafile-net:
